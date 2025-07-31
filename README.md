@@ -1,7 +1,29 @@
 # Overview
 Retrieval-augmented generation has been shown to improve the capabilities of LLMs in myriad of question-answering metrics (Guu et al. 2020, Borgeaud et al. 2022), as well in general code generation (Su et al. 2024). However, its effects on optimizing code generation in terms of system performance has been so far unclear. To explore its capabilities in creating high-performing CUDA code in particular, I created a simple RAG model which retrieves information from NVIDIA's CUDA manual. Then, I tasked an LLM trained under this model with creating a high-performing GEMM and compared results with its baseline (the LLM without an RAG application). 
 
-## References
+More information and testing results are available at `writeup.md`.
+
+
+# Setup instructions
+
+This project is hosted on NVIDIA GPU and tested with CUDA Toolkit 12.4. Support for `nvcc` is also required.
+
+To use, clone the Github repository and install the necessary requirements via pip.
+
+```
+git clone https://github.com/hanjingwang9/rag_gemm.git
+cd rag_gemm
+pip install -r requirements.txt
+```
+
+To run the entire pipeline, call the main function.
+
+```
+python -m src.main
+```
+
+
+# References
 - Langchain RAG App Tutorial, https://python.langchain.com/docs/tutorials/rag/#orchestration
 - NVIDIA CUDA documentation, https://docs.nvidia.com/cuda/cuda-c-programming-guide/#performance-guidelines
 - Guu et al., "REALM: Retrieval-Augmented Language Model Pre-Training", https://arxiv.org/abs/2002.08909
