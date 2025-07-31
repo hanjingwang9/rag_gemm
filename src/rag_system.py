@@ -10,7 +10,7 @@ from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.graph import START, StateGraph
 from typing_extensions import Annotated, TypedDict
-import config
+from . import config
 
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 

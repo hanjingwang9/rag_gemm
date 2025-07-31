@@ -1,6 +1,6 @@
 from langchain_community.document_loaders import WebBaseLoader
-import rag_system
-import benchmark
+from . import rag_system
+from . import benchmark
 
 def main():
     loader = WebBaseLoader(
