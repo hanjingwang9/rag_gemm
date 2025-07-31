@@ -8,8 +8,8 @@ def main():
     full_doc = loader.load()
     vector_store = rag_system.store_docs(full_doc)
     
-    graph1, llm1 = rag_system.create_rag_graph("gpt-4.1", vector_store)
-    graph2, llm2 = rag_system.create_rag_graph("gpt-4o", vector_store)
+    graph1, llm1 = rag_system.run_rag_gemm("gpt-4.1", vector_store)
+    graph2, llm2 = rag_system.run_rag_gemm("gpt-4o", vector_store)
 
     user_prompt = """You are a highly capable programmer. With specific code and not using any built-in libraries such as CUTLASS,
     please implement a high-performing GEMM kernel for FP32 in CUDA, with performance similar to cuBLAS. Your code should not be simplified
