@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints
+
+# Build artifacts
+*.o
+*.so
+*.exe
+*_exec
+
+# Environment
+.env
+.venv
+env/
+venv/
+
+
+# IDE files
+.idea/
+.vscode/
