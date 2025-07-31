@@ -27,8 +27,14 @@ def create_benchmark_harness(kernel_code):
     except FileNotFoundError:
         print(f"Error: The template file was not found at {template_path}")
         return None
+    
+    kernel_name_match = re.search(r'__global__ void\s+(\w+)\(', kernel_code)
+    if not kernel_name_match:
+        print("Warning: Could not find a __global__ function to rename.")
+        return None
 
     full_code = template_code.replace('// {{GENERATED_KERNEL_CODE}}', kernel_code)
+    full_code = full_code.replace('{kernel_name}', kernel_name_match.group(1))    
     return full_code
 
 
