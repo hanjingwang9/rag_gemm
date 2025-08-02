@@ -8,5 +8,3 @@ beautifulsoup4
 langchainhub
 pandas
 matplotlib
-subprocess
-typing_extensions
