@@ -7,7 +7,6 @@ langchain-text-splitters
 beautifulsoup4
 langchainhub
 pandas
-pickle
 matplotlib
 subprocess
 typing_extensions
