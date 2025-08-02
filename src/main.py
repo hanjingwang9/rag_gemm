@@ -1,15 +1,28 @@
+import os
+import pickle
 from langchain_community.document_loaders import WebBaseLoader
 from . import rag_system
 from . import benchmark
 
 def main():
-    loader = WebBaseLoader(
-    web_paths=("https://docs.nvidia.com/cuda/cuda-c-programming-guide/",))
-    full_doc = loader.load()
-    vector_store = rag_system.store_docs(full_doc)
+    vector_store_cache_path = "vector_store.pkl"
+
+    if os.path.exists(vector_store_cache_path):
+        with open(vector_store_cache_path, "rb") as f:
+            vector_store = pickle.load(f)
+            print("Vector store loaded from cache.")
+    else:
+        print("No cached vector store found. Building a new one...")
+        loader = WebBaseLoader(
+        web_paths=("https://docs.nvidia.com/cuda/cuda-c-programming-guide/",))
+        full_doc = loader.load()
+        vector_store = rag_system.store_docs(full_doc)
+        with open(vector_store_cache_path, "wb") as f:
+            pickle.dump(vector_store, f)
+        print("Vector store cached successfully.")
     
-    graph1, llm1 = rag_system.run_rag_gemm("gpt-4.1", vector_store)
-    graph2, llm2 = rag_system.run_rag_gemm("gpt-4o", vector_store)
+    llm1, graph1 = rag_system.run_rag_gemm("gpt-4.1", vector_store)
+    llm2, graph2 = rag_system.run_rag_gemm("gpt-4o", vector_store)
 
     user_prompt = """You are a highly capable programmer. With specific code and not using any built-in libraries such as CUTLASS,
     please implement a high-performing GEMM kernel for FP32 in CUDA, with performance similar to cuBLAS. Your code should not be simplified
