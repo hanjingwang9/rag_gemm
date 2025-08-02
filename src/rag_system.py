@@ -1,7 +1,5 @@
-import os
-import bs4
 import time
-from typing import List, Literal
+from typing import List
 
 from langchain import hub
 from langchain_community.document_loaders import WebBaseLoader

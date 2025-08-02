@@ -1,8 +1,10 @@
 import os
 import pickle
 from langchain_community.document_loaders import WebBaseLoader
+from langchain_openai import AzureOpenAIEmbeddings
 from . import rag_system
 from . import benchmark
+from . import config
 
 def main():
     vector_store_cache_path = "vector_store.pkl"
@@ -10,6 +12,15 @@ def main():
     if os.path.exists(vector_store_cache_path):
         with open(vector_store_cache_path, "rb") as f:
             vector_store = pickle.load(f)
+
+            print("Re-initializing embedding client for loaded vector store...")
+            embeddings = AzureOpenAIEmbeddings(
+                azure_endpoint=config.embedding_endpoint,
+                api_key=config.api_key,
+                azure_deployment=config.embedding_deployment,
+                openai_api_version=config.embedding_api_version,
+                )
+            vector_store.embedding = embeddings
             print("Vector store loaded from cache.")
     else:
         print("No cached vector store found. Building a new one...")
@@ -17,8 +28,12 @@ def main():
         web_paths=("https://docs.nvidia.com/cuda/cuda-c-programming-guide/",))
         full_doc = loader.load()
         vector_store = rag_system.store_docs(full_doc)
+        embedding_client = vector_store.embedding
+        vector_store.embedding = None
+
         with open(vector_store_cache_path, "wb") as f:
             pickle.dump(vector_store, f)
+        vector_store.embedding = embedding_client
         print("Vector store cached successfully.")
     
     llm1, graph1 = rag_system.run_rag_gemm("gpt-4.1", vector_store)
