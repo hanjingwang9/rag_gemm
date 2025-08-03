@@ -73,7 +73,7 @@ def compile_and_run(cpp_code, file_name):
         f"/usr/local/cuda-12.4/bin/nvcc {file_name} "
         f"-o {executable_name} "
         f"-gencode arch=compute_75,code=sm_75 "
-        f"-lcublas --cudart static"
+        f"--cudart static -lcublas_static -lculibos"
     )
 
     print(f"\nCompiling {file_name}...")
@@ -89,16 +89,10 @@ def compile_and_run(cpp_code, file_name):
         return
     
     print(f"Compilation successful. Executable created: {executable_name}")
-    
-    run_command = (
-        f"export LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH && "
-        f"ldconfig && "
-        f"./{executable_name}"
-    )
 
     print("\n--- Running Benchmark ---")
     run_result = subprocess.run(
-        run_command,
+        f"./{executable_name}",
         shell=True, capture_output=True, text=True
     )
 
