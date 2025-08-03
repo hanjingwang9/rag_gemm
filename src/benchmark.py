@@ -48,11 +48,9 @@ def create_benchmark_harness(kernel_code):
     if not kernel_name_match:
         print("Warning: Could not find a __global__ function to rename.")
         return None
-    
-    kernel_name = kernel_name_match[-1]
 
     full_code = template_code.replace('// {{GENERATED_KERNEL_CODE}}', kernel_code)
-    full_code = full_code.replace('{kernel_name}', kernel_name)    
+    full_code = full_code.replace('{kernel_name}', kernel_name_match.group(1))    
     return full_code
 
 
