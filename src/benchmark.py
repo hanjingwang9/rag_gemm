@@ -1,7 +1,7 @@
 import os
 import re
 import subprocess
-import glob
+import shutil
 
 def extract_cpp_code(text):
     """Parses the LLM's response to find and extract the C++ code block."""
@@ -69,6 +69,15 @@ def compile_and_run(cpp_code, file_name):
 
     executable_name = file_name.replace('.cu', '_exec')
 
+    print("\nSearching for and removing conflicting CUDA toolkits...")
+    conflicting_cuda_path = "/usr/local/cuda-12.5"
+    if os.path.exists(conflicting_cuda_path):
+        print(f"Found conflicting toolkit at {conflicting_cuda_path}. Removing it...")
+        shutil.rmtree(conflicting_cuda_path)
+        print("Conflicting toolkit removed.")
+    else:
+        print("No conflicting toolkits found.")
+
     compile_command = (
         f"/usr/local/cuda-12.4/bin/nvcc {file_name} "
         f"-o {executable_name} "
@@ -89,6 +98,7 @@ def compile_and_run(cpp_code, file_name):
         return
     
     print(f"Compilation successful. Executable created: {executable_name}")
+    
 
     print("\n--- Running Benchmark ---")
     run_result = subprocess.run(
