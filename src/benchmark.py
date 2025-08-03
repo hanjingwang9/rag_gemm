@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import glob
 
 def extract_cpp_code(text):
     """Parses the LLM's response to find and extract the C++ code block."""
@@ -88,6 +89,16 @@ def compile_and_run(cpp_code, file_name):
         return
     
     print(f"Compilation successful. Executable created: {executable_name}")
+
+    conflicting_paths = glob.glob('/usr/local/cuda-12.5*') + glob.glob('/usr/local/cuda-12-5*')
+    disabled_paths = []
+    for path in conflicting_paths:
+        lib_path = os.path.join(path, 'lib64')
+        if os.path.exists(lib_path):
+            disabled_path = lib_path + "_disabled"
+            print(f"Found conflicting CUDA path. Disabling: {lib_path} -> {disabled_path}")
+            os.rename(lib_path, disabled_path)
+            disabled_paths.append((lib_path, disabled_path))
 
     print("\n--- Running Benchmark ---")
     
