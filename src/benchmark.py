@@ -4,15 +4,21 @@ import subprocess
 
 def extract_cpp_code(text):
     """Parses the LLM's response to find and extract the C++ code block."""
-    match = re.search(r'```cpp\n(.*?)```', text, re.DOTALL)
-    if match:
-        return match.group(1)
-    # Fallback for code that isn't in a formatted block
-    if "#include" in text and "main()" in text:
-        return text
+    code_block_match = re.search(r'```(?:cpp|cuda)\n(.*?)```', text, re.DOTALL)
+    if not code_block_match:
+        print("Warning: Could not find a C++ or CUDA code block in the response.")
+        return None
     
-    print("Warning: Could not find a valid C++ code block (```cpp) in the response.")
-    return None
+    code_content = code_block_match.group(1)
+    
+    start_match = re.search(r'__global__ void', code_content)
+    if not start_match:
+        print("Warning: Could not find a __global__ function in the code block.")
+        return None
+        
+    code_from_kernel = code_content[start_match.start():]
+    
+    return code_from_kernel
 
 def create_benchmark_harness(kernel_code):
     """
@@ -43,6 +49,10 @@ def compile_and_run(cpp_code, file_name):
     Takes a string of C++ code, writes it to a file, compiles it with nvcc,
     and runs the resulting executable, printing the output.
     """
+    if not cpp_code:
+        print(f"Skipping compilation for {file_name} due to missing code.")
+        return
+    
     with open(file_name, "w") as f:
         f.write(cpp_code)
 
