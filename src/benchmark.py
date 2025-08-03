@@ -4,21 +4,22 @@ import subprocess
 
 def extract_cpp_code(text):
     """Parses the LLM's response to find and extract the C++ code block."""
-    code_block_match = re.search(r'```(?:cpp|cuda)\n(.*?)```', text, re.DOTALL)
-    if not code_block_match:
-        print("Warning: Could not find a C++ or CUDA code block in the response.")
+    match = re.search(r'```(?:cpp|cuda)\n(.*?)```', text, re.DOTALL)
+    if match:
+        code_content = match.group(1)
+    else:
+        print("Warning: Could not find a valid C++ code block (```cpp or ```cuda) in the response.")
         return None
     
-    code_content = code_block_match.group(1)
+    cleaned_code = re.sub(r'#include\s*<.*?>\n', '', code_content)
+    # Remove main function
+    cleaned_code = re.sub(r'int\s+main\s*\(.*\)\s*\{[\s\S]*\}', '', cleaned_code)
     
-    start_match = re.search(r'__global__ void', code_content)
-    if not start_match:
-        print("Warning: Could not find a __global__ function in the code block.")
-        return None
-        
-    code_from_kernel = code_content[start_match.start():]
+    # Remove CUDA_CHECK and CUBLAS_CHECK macro definitions to avoid redefinition
+    cleaned_code = re.sub(r'#define\s+CUDA_CHECK\([\s\S]*?\}\s*while\s*\(0\)', '', cleaned_code)
+    cleaned_code = re.sub(r'#define\s+CUBLAS_CHECK\([\s\S]*?\}\s*while\s*\(0\)', '', cleaned_code)
     
-    return code_from_kernel
+    return cleaned_code.strip()
 
 def create_benchmark_harness(kernel_code):
     """
@@ -59,7 +60,7 @@ def compile_and_run(cpp_code, file_name):
     executable_name = file_name.replace('.cu', '_exec')
 
     compile_command = (
-        f"/usr/local/cuda-12.4/bin/nvcc {file_name} "
+        f"nvcc {file_name} "
         f"-o {executable_name} "
         f"-gencode arch=compute_75,code=sm_75 "
         f"-lcublas --cudart static"
