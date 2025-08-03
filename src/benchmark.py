@@ -72,7 +72,7 @@ def compile_and_run(cpp_code, file_name):
         f"/usr/local/cuda-12.4/bin/nvcc {file_name} "
         f"-o {executable_name} "
         f"-gencode arch=compute_75,code=sm_75 "
-        f"-lcublas"
+        f"-lcublas --cudart static"
     )
 
     print(f"\nCompiling {file_name}...")
