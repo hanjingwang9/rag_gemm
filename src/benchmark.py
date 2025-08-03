@@ -6,13 +6,20 @@ def extract_cpp_code(text):
     """Parses the LLM's response to find and extract the C++ code block."""
     match = re.search(r'```(?:cpp|cuda)\n(.*?)```', text, re.DOTALL)
     if match:
-        code_content = match.group(1)
+        return match.group(1)
     else:
         print("Warning: Could not find a valid C++ code block (```cpp or ```cuda) in the response.")
         return None
+
+def clean_generated_code(code_content):
+    """ 
+    Removes boilerplate from the LLM's generated code that would conflict
+    with the benchmark template.
+    """
+    if not code_content:
+        return ""
     
     cleaned_code = re.sub(r'#include\s*<.*?>\n', '', code_content)
-    # Remove main function
     cleaned_code = re.sub(r'int\s+main\s*\(.*\)\s*\{[\s\S]*\}', '', cleaned_code)
     
     # Remove CUDA_CHECK and CUBLAS_CHECK macro definitions to avoid redefinition
@@ -35,13 +42,17 @@ def create_benchmark_harness(kernel_code):
         print(f"Error: The template file was not found at {template_path}")
         return None
     
+    kernel_code = clean_generated_code(kernel_code)
+    
     kernel_name_match = re.search(r'__global__ void\s+(\w+)\(', kernel_code)
     if not kernel_name_match:
         print("Warning: Could not find a __global__ function to rename.")
         return None
+    
+    kernel_name = kernel_name_match[-1]
 
     full_code = template_code.replace('// {{GENERATED_KERNEL_CODE}}', kernel_code)
-    full_code = full_code.replace('{kernel_name}', kernel_name_match.group(1))    
+    full_code = full_code.replace('{kernel_name}', kernel_name)    
     return full_code
 
 
@@ -60,7 +71,7 @@ def compile_and_run(cpp_code, file_name):
     executable_name = file_name.replace('.cu', '_exec')
 
     compile_command = (
-        f"nvcc {file_name} "
+        f"/usr/local/cuda-12.4/bin/nvcc {file_name} "
         f"-o {executable_name} "
         f"-gencode arch=compute_75,code=sm_75 "
         f"-lcublas --cudart static"
