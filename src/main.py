@@ -42,7 +42,8 @@ def main():
     user_prompt = """You are a highly capable programmer. With specific code and not using any built-in libraries such as CUTLASS,
     please implement a high-performing GEMM kernel for FP32 in CUDA, with performance similar to cuBLAS. Your code should not be simplified
     in any way, instead fully exploiting the capabilities of GPUs to ensure maximal performance. Do not return anything other than the kernel itself,
-    written strictly in C++ code. Your kernel should take in FP32 matrices A, B, C (C being the product) as well as integer dimensions M, N, K."""
+    written strictly in C++ code, and do not define any other data structures or constants (such as block sizes) outside the kernel. 
+    Your kernel should take in FP32 blocks A, B, C (C being the product) as well as integer dimensions M, N, K."""
 
     generated_code_1 = rag_system.generate_code(graph1, llm1, user_prompt)
     generated_code_2 = rag_system.generate_code(graph2, llm2, user_prompt)
