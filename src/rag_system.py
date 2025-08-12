@@ -2,7 +2,6 @@ import time
 from typing import List
 
 from langchain import hub
-from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.documents import Document
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -46,38 +45,52 @@ def store_docs(docs):
     print("Indexing complete.")
     return vector_store
 
-def run_rag_gemm(model, vector_store):
-    """Builds RAG application using chat model."""
-    llm = AzureChatOpenAI(
-        azure_endpoint=config.llm_endpoint,
-        api_key=config.api_key,
-        azure_deployment=model,
-        api_version=config.llm_api_version,
-    )
-    print("LLM model configured.")
+def get_llm(model_family, deployment_name):
+    """Initializes LangChain LLM client based on the specified model family."""
+    if model_family == "openai":
+        print(f"Initializing AzureChatOpenAI for deployment: {deployment_name}")
+        return AzureChatOpenAI(
+            azure_endpoint=config.openai_endpoint,
+            api_key=config.api_key,
+            azure_deployment=deployment_name,
+            api_version=config.openai_api_version,
+        )
+    elif model_family == "llama":
+        print(f"Initializing AzureChatOpenAI for Llama deployment: {deployment_name}")
+        return AzureChatOpenAI(
+            azure_endpoint=config.llama_endpoint,
+            api_key=config.api_key,
+            azure_deployment=deployment_name,
+            api_version=config.llama_api_version
+        )
+    else:
+        print(f"Warning: Model family '{model_family}' not recognized. Using placeholder.")
+        return None
 
-    class Search(TypedDict):
-        """Search query."""
-        query: Annotated[str, ..., "A well-formed search query to run against the vector store."]
+
+def run_rag_gemm(model, llm, vector_store):
+    """Builds RAG application using chat model."""
+    print("RAG graph using configured LLM.")
 
     prompt = hub.pull("rlm/rag-prompt")
 
     class State(TypedDict):
         question: str
-        query: Search
         context: List[Document]
         answer: str
+        query: dict
 
     def analyze_query(state: State):
         print("-> Analyzing Query...")
-        structured_llm = llm.with_structured_output(Search)
+        SearchSchema = TypedDict("Search", {"query": Annotated[str, "A well-formed search query."]})
+        structured_llm = llm.with_structured_output(SearchSchema)
         query_object = structured_llm.invoke(state["question"])
         print(f"   Generated Query: {query_object['query']}")
         return {"query": query_object}
 
     def retrieve(state: State):
         print("-> Retrieving Documents...")
-        query_str = state["query"]["query"]
+        query_str = state.get("query", {}).get("query", state["question"])
         retrieved_docs = vector_store.similarity_search(query_str, k=4)
         print(f"   Retrieved {len(retrieved_docs)} documents.")
         return {"context": retrieved_docs}
@@ -91,16 +104,25 @@ def run_rag_gemm(model, vector_store):
 
     # Compile graph
     graph_builder = StateGraph(State)
-    graph_builder.add_node("analyze_query", analyze_query)
-    graph_builder.add_node("retrieve", retrieve)
-    graph_builder.add_node("generate", generate)
-    graph_builder.add_edge(START, "analyze_query")
-    graph_builder.add_edge("analyze_query", "retrieve")
-    graph_builder.add_edge("retrieve", "generate")
+
+    if model == "openai":
+        graph_builder.add_node("analyze_query", analyze_query)
+        graph_builder.add_node("retrieve", retrieve)
+        graph_builder.add_node("generate", generate)
+        graph_builder.add_edge(START, "analyze_query")
+        graph_builder.add_edge("analyze_query", "retrieve")
+        graph_builder.add_edge("retrieve", "generate")
+    elif model == "llama":
+        # Llama model is without queries
+        graph_builder.add_node("retrieve", retrieve)
+        graph_builder.add_node("generate", generate)
+        graph_builder.add_edge(START, "retrieve")
+        graph_builder.add_edge("retrieve", "generate")
+    
     graph = graph_builder.compile()
     print("\n RAG graph compiled.")
     
-    return llm, graph
+    return graph
 
 def generate_code(graph, llm, prompt):
     """Generates RAG and baseline response given a specific model and prompt."""

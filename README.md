@@ -16,11 +16,20 @@ cd rag_gemm
 pip install -r requirements.txt
 ```
 
-To run the entire pipeline, call the main function.
+You can run the entire pipeline from the command line, specifying which family of models you want to test.
+
+### To run the entire pipeline on the OpenAI models (e.g., gpt-4.1, gpt-4o):
 
 ```
-python -m src.main
+python -m src.main --model openai
 ```
+
+### To run the entire pipeline on the LLama model (e.g., gpt-4.1, gpt-4o):
+
+```
+python -m src.main --model llama
+```
+The script will generate, compile, and benchmark the CUDA kernels produced by the specified models.
 
 
 # References

@@ -1,3 +1,4 @@
+import argparse
 import os
 import pickle
 from langchain_community.document_loaders import WebBaseLoader
@@ -7,6 +8,16 @@ from . import benchmark
 from . import config
 
 def main():
+    parser = argparse.ArgumentParser(description="Run GEMM kernel generation and benchmarking.")
+    parser.add_argument(
+        "--model", 
+        type=str, 
+        required=True, 
+        choices=["openai", "llama"],
+        help="Specify the chat model family to use ('openai' or 'llama')."
+    )
+    args = parser.parse_args()
+
     vector_store_cache_path = "vector_store.pkl"
 
     if os.path.exists(vector_store_cache_path):
@@ -36,8 +47,13 @@ def main():
         vector_store.embedding = embedding_client
         print("Vector store cached successfully.")
     
-    llm1, graph1 = rag_system.run_rag_gemm("gpt-4.1", vector_store)
-    llm2, graph2 = rag_system.run_rag_gemm("gpt-4o", vector_store)
+    if args.model == "openai":
+        models_to_test = config.openai_deployments
+    elif args.model == "llama":
+        models_to_test = config.llama_deployments
+    else:
+        print(f"Model family '{args.model}' is not yet supported.")
+        models_to_test = []
 
     user_prompt = """You are a highly capable programmer. With specific code and not using any built-in libraries such as CUTLASS,
     please implement a high-performing GEMM kernel for FP32 in CUDA, with performance similar to cuBLAS. Your code should not be simplified
@@ -45,40 +61,31 @@ def main():
     written strictly in C++ code, and do not define any other data structures or constants (such as block sizes) outside the kernel. 
     Your kernel should take in FP32 blocks A, B, C (C being the product) as well as integer dimensions M, N, K."""
 
-    generated_code_1 = rag_system.generate_code(graph1, llm1, user_prompt)
-    generated_code_2 = rag_system.generate_code(graph2, llm2, user_prompt)
+    for model_deployment in models_to_test:
+        print(f"\n\n{'='*20} TESTING MODEL: {model_deployment} {'='*20}")
+        llm = rag_system.get_llm(args.model, model_deployment)
+        if not llm:
+            print(f"Could not initialize model {model_deployment}. Skipping.")
+            continue
 
-    print("\n\n--- BENCHMARKING RAG-GENERATED GPT-4.1 KERNEL ---")
-    rag_kernel_1 = benchmark.extract_cpp_code(generated_code_1["rag_answer"])
-    if rag_kernel_1:
-        rag_harness_1 = benchmark.create_benchmark_harness(rag_kernel_1)
-        benchmark.compile_and_run(rag_harness_1, "rag_gemm_1.cu")
-    else:
-        print("Could not extract C++ code from the RAG response.")
+        graph = rag_system.run_rag_gemm(args.model, llm, vector_store)
+        generated_code = rag_system.generate_code(graph, llm, user_prompt)
+        
+        print(f"\n--- BENCHMARKING RAG-GENERATED {model_deployment} KERNEL ---")
+        rag_kernel = benchmark.extract_cpp_code(generated_code["rag_answer"])
+        if rag_kernel:
+            rag_harness = benchmark.create_benchmark_harness(rag_kernel)
+            benchmark.compile_and_run(rag_harness, f"rag_{model_deployment}.cu")
+        else:
+            print("Could not extract C++ code from the RAG response.")
 
-    print("\n\n--- BENCHMARKING BASELINE-GENERATED GPT-4.1 KERNEL ---")
-    baseline_kernel_1 = benchmark.extract_cpp_code(generated_code_1["baseline_answer"])
-    if baseline_kernel_1:
-        baseline_harness_1 = benchmark.create_benchmark_harness(baseline_kernel_1)
-        benchmark.compile_and_run(baseline_harness_1, "baseline_gemm_1.cu")
-    else:
-        print("Could not extract C++ code from the Baseline response.")
-
-    print("\n\n--- BENCHMARKING RAG-GENERATED GPT-4o KERNEL ---")
-    rag_kernel_2 = benchmark.extract_cpp_code(generated_code_2["rag_answer"])
-    if rag_kernel_2:
-        rag_harness_2 = benchmark.create_benchmark_harness(rag_kernel_2)
-        benchmark.compile_and_run(rag_harness_2, "rag_gemm_2.cu")
-    else:
-        print("Could not extract C++ code from the RAG response.")
-
-    print("\n\n--- BENCHMARKING BASELINE-GENERATED GPT-4o KERNEL ---")
-    baseline_kernel_2 = benchmark.extract_cpp_code(generated_code_2["baseline_answer"])
-    if baseline_kernel_2:
-        baseline_harness_2 = benchmark.create_benchmark_harness(baseline_kernel_2)
-        benchmark.compile_and_run(baseline_harness_2, "baseline_gemm_2.cu")
-    else:
-        print("Could not extract C++ code from the Baseline response.")
+        print(f"\n--- BENCHMARKING BASELINE {model_deployment} KERNEL ---")
+        baseline_kernel = benchmark.extract_cpp_code(generated_code["baseline_answer"])
+        if baseline_kernel:
+            baseline_harness = benchmark.create_benchmark_harness(baseline_kernel)
+            benchmark.compile_and_run(baseline_harness, f"baseline_{model_deployment}.cu")
+        else:
+            print("Could not extract C++ code from the Baseline response.")
 
 
 if __name__ == "__main__":
