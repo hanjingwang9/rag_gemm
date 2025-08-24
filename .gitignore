@@ -23,7 +23,7 @@ venv/
 .idea/
 .vscode/
 
-# Config files
+# .gitignore
 src/config.py
 create_embeddings.py
 .DS_Store
