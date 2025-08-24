@@ -16,6 +16,15 @@ cd rag_gemm
 pip install -r requirements.txt
 ```
 
+Before running the program, you must configure your API keys.
+
+1.  Navigate to the `src/` directory.
+2.  Make a copy of the template file by running the following command in your terminal:
+    ```
+    cp config.py.template config.py
+    ```
+3.  Open the new `src/config.py` file and replace the placeholder values with your actual Azure API keys, endpoints, and deployment names. This file is included in `.gitignore` and will not be committed.
+
 You can run the entire pipeline from the command line, specifying which family of models you want to test.
 
 ### To run the entire pipeline on the OpenAI models (e.g., gpt-4.1, gpt-4o):

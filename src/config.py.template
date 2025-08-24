@@ -1,0 +1,20 @@
+# This is a template file. Copy this to a new file named 'config.py'
+# and fill in your own API keys and deployment details.
+
+# Your single API key for all Azure services
+api_key = "YOUR_AZURE_API_KEY_HERE"
+
+# --- Credentials for Embedding Model ---
+embedding_endpoint = "YOUR_EMBEDDING_ENDPOINT_HERE"
+embedding_deployment = "YOUR_EMBEDDING_DEPLOYMENT_NAME_HERE"
+embedding_api_version = "2024-02-01"
+
+# --- Credentials for OpenAI Chat Models ---
+openai_endpoint = "YOUR_OPENAI_ENDPOINT_HERE"
+openai_api_version = "2024-12-01-preview"
+openai_deployments = ["gpt-4.1", "gpt-4o"]
+
+# --- Credentials for Llama Chat Models ---
+llama_endpoint = "YOUR_LLAMA_ENDPOINT_HERE"
+llama_api_version = "2024-05-01-preview"
+llama_deployments = ["Llama-3.3-70B-Instruct"]
